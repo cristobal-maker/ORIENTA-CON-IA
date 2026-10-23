@@ -1,0 +1,6 @@
+{
+  "name": "NotebookLM para la Orientación Educativa",
+  "description": "Centro de recursos interactivo, guía paso a paso y simulador de prompts de NotebookLM para orientadores educativos y psicopedagogos.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
