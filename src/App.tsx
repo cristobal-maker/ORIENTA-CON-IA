@@ -16,20 +16,26 @@ import {
   Moon,
   Sparkles,
   Sun,
+  Printer,
 } from 'lucide-react';
 import { Module1Foundations } from './components/Module1Foundations';
 import { Module2StepByStep } from './components/Module2StepByStep';
 import { Module3UseCases } from './components/Module3UseCases';
 import { Module4PromptSimulator } from './components/Module4PromptSimulator';
 import { Module5AdministrativeTasks } from './components/Module5AdministrativeTasks';
+import { GlossarySection } from './components/GlossarySection';
+import { InteractiveTour } from './components/InteractiveTour';
 import { OrientationCategory } from './data/notebookData';
 import { downloadNotebookLMGuidePdf } from './utils/generatePdfGuide';
+import { isTourCompleted } from './utils/tourStorage';
 
 export default function App() {
   const [simulatorCategory, setSimulatorCategory] =
     useState<OrientationCategory | null>(null);
+  const [customPromptFocus, setCustomPromptFocus] = useState<string | null>(null);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState<boolean>(false);
   const [logoLoadError, setLogoLoadError] = useState<boolean>(false);
+  const [isTourRunning, setIsTourRunning] = useState<boolean>(false);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     try {
       const saved = localStorage.getItem('notebooklm-orientacion-theme');
@@ -58,6 +64,16 @@ export default function App() {
     }
   }, [isDarkMode]);
 
+  // Check if first-time visitor to launch the interactive tour automatically
+  useEffect(() => {
+    if (!isTourCompleted()) {
+      const timer = setTimeout(() => {
+        setIsTourRunning(true);
+      }, 750);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
   const scrollToSection = (sectionId: string) => {
     const el = document.getElementById(sectionId);
     if (el) {
@@ -77,6 +93,27 @@ export default function App() {
     } finally {
       setTimeout(() => setIsDownloadingPdf(false), 2500);
     }
+  };
+
+  const handlePrint = (
+    target: 'all' | 'guia' | 'casos' | 'glosario' = 'all'
+  ) => {
+    document.body.classList.remove(
+      'print-only-guia',
+      'print-only-casos',
+      'print-only-glosario'
+    );
+    if (target !== 'all') {
+      document.body.classList.add(`print-only-${target}`);
+    }
+    window.print();
+    setTimeout(() => {
+      document.body.classList.remove(
+        'print-only-guia',
+        'print-only-casos',
+        'print-only-glosario'
+      );
+    }, 1000);
   };
 
   return (
@@ -187,6 +224,16 @@ export default function App() {
               Gestión Administrativa
             </a>
             <a
+              href="#glosario-terminos"
+              onClick={(e) => {
+                e.preventDefault();
+                scrollToSection('glosario-terminos');
+              }}
+              className="hover:text-slate-900 dark:hover:text-white hover:underline underline-offset-4 transition-colors whitespace-nowrap shrink-0"
+            >
+              Glosario
+            </a>
+            <a
               href="#simulador-prompts"
               onClick={(e) => {
                 e.preventDefault();
@@ -198,12 +245,24 @@ export default function App() {
             </a>
           </nav>
 
-          {/* Zone 3: 1 primary action */}
-          <div className="flex items-center shrink-0">
+          {/* Zone 3: Actions */}
+          <div className="flex items-center gap-2.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                scrollToSection('inicio');
+                setTimeout(() => setIsTourRunning(true), 250);
+              }}
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-[#0284C7] dark:hover:text-sky-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+              title="Iniciar tour guiado interactivo"
+            >
+              <Compass className="w-3.5 h-3.5 text-[#0284C7] dark:text-sky-400" />
+              <span>Tour</span>
+            </button>
             <button
               type="button"
               onClick={() => scrollToSection('simulador-prompts')}
-              className="px-4 py-2 text-xs font-semibold text-white bg-[#0284C7] rounded-lg hover:bg-[#0369A1] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+              className="px-4 py-2 text-xs font-semibold text-white bg-[#0284C7] rounded-lg hover:bg-[#0369A1] transition-colors whitespace-nowrap shrink-0 cursor-pointer shadow-xs"
             >
               Generar Prompt Maestro
             </button>
@@ -213,11 +272,32 @@ export default function App() {
 
       {/* Main Content */}
       <main id="inicio" className="flex-1">
+        {/* Print-Only Official Document Header */}
+        <div className="hidden print:block max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 pt-4 mb-6 border-b-2 border-slate-900 pb-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-xl font-bold font-display text-slate-950">
+                NotebookLM para la Orientación Educativa y Profesional
+              </h1>
+              <p className="text-xs text-slate-600 mt-1">
+                Centro de Recursos Psicopedagógicos · Anclaje en Fuentes (Grounding) y Cumplimiento RGPD
+              </p>
+            </div>
+            <div className="text-right text-[11px] font-mono text-slate-500">
+              <div>Documento Oficial de Consulta</div>
+              <div>Guía Práctica · Casos · Glosario</div>
+            </div>
+          </div>
+        </div>
+
         {/* Hero Section */}
         <section className="py-12 md:py-16 bg-white dark:bg-slate-900/90 border-b border-slate-200 dark:border-slate-800 transition-colors">
           <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
             {/* Workspace Reading Comfort Toolbar (Below the header to honor 3-zone Top Bar Contract) */}
-            <div className="mb-8 pb-4 border-b border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div
+              id="tour-comfort-toolbar"
+              className="mb-8 pb-4 border-b border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+            >
               <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                 <span className="font-semibold text-[#0284C7] dark:text-sky-400">
                   Centro de Recursos Psicopedagógicos
@@ -228,45 +308,67 @@ export default function App() {
                 <span>100% Orientado a Práctica Real</span>
               </div>
 
-              {/* High-Legibility Dark Mode Segmented Toggle */}
-              <div className="flex items-center gap-2 self-start sm:self-auto">
-                <span className="text-xs text-slate-500 dark:text-slate-400 hidden sm:inline">
-                  Confort visual:
-                </span>
-                <div className="inline-flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg">
-                  <button
-                    type="button"
-                    onClick={() => setIsDarkMode(false)}
-                    aria-pressed={!isDarkMode}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                      !isDarkMode
-                        ? 'bg-white text-slate-900 shadow-xs'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                    }`}
-                  >
-                    <Sun className="w-3.5 h-3.5 text-amber-500" />
-                    <span>Modo Claro</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsDarkMode(true)}
-                    aria-pressed={isDarkMode}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                      isDarkMode
-                        ? 'bg-slate-800 text-sky-300 shadow-xs'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                    }`}
-                  >
-                    <Moon className="w-3.5 h-3.5 text-sky-400" />
-                    <span>Tema Oscuro (Baja Fatiga)</span>
-                  </button>
+              {/* Action Controls: Tour Guide Button + Print Button + Dark Mode Segmented Toggle */}
+              <div className="flex flex-wrap items-center gap-2.5 self-start sm:self-auto">
+                <button
+                  type="button"
+                  onClick={() => setIsTourRunning(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#0284C7] dark:text-sky-300 bg-sky-50 dark:bg-sky-950/60 border border-sky-200 dark:border-sky-800/80 rounded-lg hover:bg-sky-100 dark:hover:bg-sky-900/50 transition-colors shadow-2xs cursor-pointer"
+                  title="Descubre las funcionalidades principales paso a paso"
+                >
+                  <Compass className="w-3.5 h-3.5 text-[#0284C7] dark:text-sky-400" />
+                  <span>Tour Guiado</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handlePrint('all')}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-[#0284C7] dark:hover:border-sky-400 hover:text-[#0284C7] dark:hover:text-sky-400 transition-colors shadow-2xs cursor-pointer"
+                  title="Imprimir los módulos en formato limpio optimizado (sin elementos de navegación)"
+                >
+                  <Printer className="w-3.5 h-3.5 text-[#0284C7] dark:text-sky-400" />
+                  <span>Imprimir Módulos</span>
+                </button>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-slate-500 dark:text-slate-400 hidden sm:inline">
+                    Confort visual:
+                  </span>
+                  <div className="inline-flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg">
+                    <button
+                      type="button"
+                      onClick={() => setIsDarkMode(false)}
+                      aria-pressed={!isDarkMode}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                        !isDarkMode
+                          ? 'bg-white text-slate-900 shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                      }`}
+                    >
+                      <Sun className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Modo Claro</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsDarkMode(true)}
+                      aria-pressed={isDarkMode}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                        isDarkMode
+                          ? 'bg-slate-800 text-sky-300 shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                      }`}
+                    >
+                      <Moon className="w-3.5 h-3.5 text-sky-400" />
+                      <span>Tema Oscuro (Baja Fatiga)</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-stretch">
               {/* Left Column (7 cols): Value Proposition & Quick Actions */}
-              <div className="lg:col-span-7 flex flex-col justify-between">
+              <div id="tour-bienvenida" className="lg:col-span-7 flex flex-col justify-between">
                 <div>
                   <h1 className="text-3xl sm:text-4xl lg:text-[2.65rem] font-extrabold text-slate-900 dark:text-slate-50 tracking-tight leading-[1.15] text-balance mb-4">
                     NotebookLM aplicado a la Orientación Educativa y Profesional
@@ -309,11 +411,30 @@ export default function App() {
 
                     <button
                       type="button"
+                      onClick={() => handlePrint('all')}
+                      className="inline-flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:border-[#0284C7] dark:hover:border-sky-400 hover:text-[#0284C7] dark:hover:text-sky-400 rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer print:hidden shadow-2xs"
+                      title="Imprimir versión limpia de la guía, casos y glosario en papel o PDF"
+                    >
+                      <Printer className="w-4 h-4 text-[#0284C7] dark:text-sky-400" />
+                      <span>Imprimir Módulos</span>
+                    </button>
+
+                    <button
+                      type="button"
                       onClick={() => scrollToSection('tareas-administrativas')}
                       className="inline-flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
                     >
                       <Sparkles className="w-4 h-4 text-[#0284C7] dark:text-sky-400" />
-                      <span>Módulo Tareas Administrativas</span>
+                      <span>Tareas Administrativas</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => scrollToSection('glosario-terminos')}
+                      className="inline-flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+                    >
+                      <BookOpen className="w-4 h-4 text-[#0284C7] dark:text-sky-400" />
+                      <span>Glosario de Términos</span>
                     </button>
                   </div>
 
@@ -508,8 +629,19 @@ export default function App() {
         {/* Module 5 (Section 04): Tareas Administrativas Generales */}
         <Module5AdministrativeTasks onLoadInSimulator={handleLoadInSimulator} />
 
+        {/* Glossary Component: Glosario de Términos Psicopedagógicos y Orientación */}
+        <GlossarySection
+          onSelectPromptSnippet={(snippet) => {
+            setCustomPromptFocus(snippet);
+            scrollToSection('simulador-prompts');
+          }}
+        />
+
         {/* Module 4 (Section 05): Simulador Interactivo de Prompts para Orientadores */}
-        <Module4PromptSimulator preselectedCategory={simulatorCategory} />
+        <Module4PromptSimulator
+          preselectedCategory={simulatorCategory}
+          customPromptFocus={customPromptFocus}
+        />
       </main>
 
       {/* Quiet, Functional Footer */}
@@ -566,6 +698,16 @@ export default function App() {
               Tareas Administrativas
             </a>
             <a
+              href="#glosario-terminos"
+              onClick={(e) => {
+                e.preventDefault();
+                scrollToSection('glosario-terminos');
+              }}
+              className="hover:text-slate-900 dark:hover:text-white transition-colors"
+            >
+              Glosario
+            </a>
+            <a
               href="#simulador-prompts"
               onClick={(e) => {
                 e.preventDefault();
@@ -575,9 +717,27 @@ export default function App() {
             >
               Simulador de Prompts
             </a>
+            <button
+              type="button"
+              onClick={() => {
+                scrollToSection('inicio');
+                setTimeout(() => setIsTourRunning(true), 300);
+              }}
+              className="inline-flex items-center gap-1 font-medium text-[#0284C7] dark:text-sky-400 hover:underline transition-colors cursor-pointer"
+            >
+              <Compass className="w-3.5 h-3.5" />
+              <span>Tour Interactivo</span>
+            </button>
           </div>
         </div>
       </footer>
+
+      {/* Interactive Step-by-Step Onboarding Tour */}
+      <InteractiveTour
+        run={isTourRunning}
+        onTourEnd={() => setIsTourRunning(false)}
+        isDarkMode={isDarkMode}
+      />
     </div>
   );
 }

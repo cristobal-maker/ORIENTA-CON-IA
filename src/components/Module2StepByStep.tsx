@@ -9,6 +9,7 @@ import {
   Check,
   Copy,
   AlertTriangle,
+  Printer,
 } from 'lucide-react';
 import { STEP_BY_STEP_GUIDE } from '../data/notebookData';
 
@@ -42,22 +43,38 @@ export const Module2StepByStep: React.FC = () => {
             </p>
           </div>
 
-          {/* Quick Step Switcher Pills (Interactive Segmented Control) */}
-          <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg self-start">
-            {STEP_BY_STEP_GUIDE.map((step, idx) => (
-              <button
-                key={step.stepNumber}
-                type="button"
-                onClick={() => setOpenStepIndex(idx)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                  openStepIndex === idx
-                    ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                }`}
-              >
-                Paso {step.stepNumber}
-              </button>
-            ))}
+          <div className="flex flex-wrap items-center gap-2.5 self-start print:hidden">
+            <button
+              type="button"
+              onClick={() => {
+                document.body.classList.add('print-only-guia');
+                window.print();
+                setTimeout(() => document.body.classList.remove('print-only-guia'), 1000);
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-[#0284C7] dark:hover:border-sky-400 hover:text-[#0284C7] dark:hover:text-sky-400 transition-colors shadow-2xs cursor-pointer"
+              title="Imprimir la Guía Paso a Paso en formato limpio"
+            >
+              <Printer className="w-3.5 h-3.5 text-[#0284C7] dark:text-sky-400" />
+              <span>Imprimir Guía</span>
+            </button>
+
+            {/* Quick Step Switcher Pills (Interactive Segmented Control) */}
+            <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg">
+              {STEP_BY_STEP_GUIDE.map((step, idx) => (
+                <button
+                  key={step.stepNumber}
+                  type="button"
+                  onClick={() => setOpenStepIndex(idx)}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                    openStepIndex === idx
+                      ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                  }`}
+                >
+                  Paso {step.stepNumber}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -106,7 +123,7 @@ export const Module2StepByStep: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-300 shrink-0">
+                  <div className="w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-300 shrink-0 print:hidden">
                     {isOpen ? (
                       <ChevronUp className="w-4 h-4" />
                     ) : (
@@ -115,10 +132,13 @@ export const Module2StepByStep: React.FC = () => {
                   </div>
                 </button>
 
-                {/* Accordion Body */}
-                {isOpen && (
-                  <div className="px-5 pb-6 sm:px-6 sm:pb-6 pt-2 border-t border-slate-200/80 dark:border-slate-800">
-                    <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed mb-6 max-w-4xl">
+                {/* Accordion Body - Always visible on print */}
+                <div
+                  className={`px-5 pb-6 sm:px-6 sm:pb-6 pt-2 border-t border-slate-200/80 dark:border-slate-800 ${
+                    isOpen ? 'block' : 'hidden print:block'
+                  }`}
+                >
+                  <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed mb-6 max-w-4xl">
                       {step.description}
                     </p>
 
@@ -233,7 +253,7 @@ export const Module2StepByStep: React.FC = () => {
                                   index
                                 )
                               }
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-white rounded transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-white rounded transition-colors whitespace-nowrap shrink-0 cursor-pointer print:hidden"
                             >
                               {copiedInstructionIndex === index ? (
                                 <>
@@ -255,8 +275,7 @@ export const Module2StepByStep: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                )}
-              </div>
+                </div>
             );
           })}
         </div>

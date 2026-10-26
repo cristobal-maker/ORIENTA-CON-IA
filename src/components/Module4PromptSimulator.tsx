@@ -9,15 +9,26 @@ import {
   ShieldAlert,
   CheckSquare,
   Square,
+  Bookmark,
+  BookmarkCheck,
 } from 'lucide-react';
 import {
   SIMULATOR_ROLES,
   OrientationCategory,
   SimulatorRoleTask,
 } from '../data/notebookData';
+import {
+  isLocalStorageAvailable,
+  getRecentPrompts,
+  saveRecentPrompt,
+  clearRecentPrompts,
+  RecentPromptItem,
+} from '../utils/recentPromptsStorage';
+import { RecentPromptHistory } from './RecentPromptHistory';
 
 interface Module4PromptSimulatorProps {
   preselectedCategory?: OrientationCategory | null;
+  customPromptFocus?: string | null;
 }
 
 const EDUCATIONAL_STAGES = [
@@ -43,6 +54,7 @@ const TONE_OPTIONS = [
 
 export const Module4PromptSimulator: React.FC<Module4PromptSimulatorProps> = ({
   preselectedCategory,
+  customPromptFocus,
 }) => {
   const [selectedRoleId, setSelectedRoleId] = useState<string>(SIMULATOR_ROLES[0].id);
   const [stage, setStage] = useState<string>('1º y 2º de ESO');
@@ -57,6 +69,18 @@ export const Module4PromptSimulator: React.FC<Module4PromptSimulatorProps> = ({
     2: true,
   });
   const [copiedPrompt, setCopiedPrompt] = useState<boolean>(false);
+  const [savedFeedback, setSavedFeedback] = useState<boolean>(false);
+  const [isStorageSupported, setIsStorageSupported] = useState<boolean>(true);
+  const [recentPrompts, setRecentPrompts] = useState<RecentPromptItem[]>([]);
+
+  // Verify if localStorage is available and load recent prompt history
+  useEffect(() => {
+    const available = isLocalStorageAvailable();
+    setIsStorageSupported(available);
+    if (available) {
+      setRecentPrompts(getRecentPrompts());
+    }
+  }, []);
 
   // Sync when user clicks "Abrir en Simulador" from Module 3 or Module 5
   useEffect(() => {
@@ -75,6 +99,13 @@ export const Module4PromptSimulator: React.FC<Module4PromptSimulatorProps> = ({
       }
     }
   }, [preselectedCategory]);
+
+  // Sync when user copies a prompt snippet from Glossary
+  useEffect(() => {
+    if (customPromptFocus) {
+      setSpecificFocus(customPromptFocus);
+    }
+  }, [customPromptFocus]);
 
   const currentRole: SimulatorRoleTask =
     SIMULATOR_ROLES.find((r) => r.id === selectedRoleId) || SIMULATOR_ROLES[0];
@@ -103,10 +134,67 @@ export const Module4PromptSimulator: React.FC<Module4PromptSimulatorProps> = ({
     specificFocus: specificFocus.trim() || currentRole.defaultFocus,
   });
 
+  const handleSavePromptDirectly = () => {
+    if (isLocalStorageAvailable()) {
+      const updated = saveRecentPrompt({
+        roleId: currentRole.id,
+        roleTitle: currentRole.title,
+        stage,
+        outputFormat,
+        tone,
+        specificFocus: specificFocus.trim() || currentRole.defaultFocus,
+        promptText: generatedMasterPrompt,
+      });
+      setRecentPrompts(updated);
+      setSavedFeedback(true);
+      setTimeout(() => setSavedFeedback(false), 2000);
+    }
+  };
+
   const handleCopyGeneratedPrompt = () => {
     navigator.clipboard.writeText(generatedMasterPrompt);
     setCopiedPrompt(true);
     setTimeout(() => setCopiedPrompt(false), 2500);
+
+    // Automatically save prompt to localStorage if available
+    if (isLocalStorageAvailable()) {
+      const updated = saveRecentPrompt({
+        roleId: currentRole.id,
+        roleTitle: currentRole.title,
+        stage,
+        outputFormat,
+        tone,
+        specificFocus: specificFocus.trim() || currentRole.defaultFocus,
+        promptText: generatedMasterPrompt,
+      });
+      setRecentPrompts(updated);
+    }
+  };
+
+  const handleRestorePrompt = (item: RecentPromptItem) => {
+    const roleExists = SIMULATOR_ROLES.find((r) => r.id === item.roleId);
+    if (roleExists) {
+      setSelectedRoleId(item.roleId);
+      const nextChecks: Record<number, boolean> = {};
+      roleExists.requiredSources.forEach((_, idx) => {
+        nextChecks[idx] = true;
+      });
+      setCheckedSources(nextChecks);
+    }
+    setStage(item.stage);
+    setOutputFormat(item.outputFormat);
+    setTone(item.tone);
+    setSpecificFocus(item.specificFocus);
+
+    // Automatically copy restored prompt to clipboard for immediate convenience
+    navigator.clipboard.writeText(item.promptText);
+    setCopiedPrompt(true);
+    setTimeout(() => setCopiedPrompt(false), 2000);
+  };
+
+  const handleClearHistory = () => {
+    clearRecentPrompts();
+    setRecentPrompts([]);
   };
 
   const handleReset = () => {
@@ -369,23 +457,45 @@ export const Module4PromptSimulator: React.FC<Module4PromptSimulatorProps> = ({
                   </h3>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handleCopyGeneratedPrompt}
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold bg-[#0284C7] hover:bg-[#0369A1] text-white rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
-                >
-                  {copiedPrompt ? (
-                    <>
-                      <Check className="w-4 h-4 text-emerald-300" />
-                      <span>¡Prompt Maestro copiado!</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-4 h-4" />
-                      <span>Copiar Prompt Maestro</span>
-                    </>
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
+                  {isStorageSupported && (
+                    <button
+                      type="button"
+                      onClick={handleSavePromptDirectly}
+                      className="inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg transition-colors cursor-pointer"
+                      title="Guardar este prompt en el historial local sin copiar"
+                    >
+                      {savedFeedback ? (
+                        <>
+                          <BookmarkCheck className="w-3.5 h-3.5 text-emerald-400" />
+                          <span className="text-emerald-300 font-medium">¡Guardado!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Bookmark className="w-3.5 h-3.5 text-sky-400" />
+                          <span>Guardar en historial</span>
+                        </>
+                      )}
+                    </button>
                   )}
-                </button>
+                  <button
+                    type="button"
+                    onClick={handleCopyGeneratedPrompt}
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold bg-[#0284C7] hover:bg-[#0369A1] text-white rounded-lg transition-colors whitespace-nowrap cursor-pointer shadow-xs"
+                  >
+                    {copiedPrompt ? (
+                      <>
+                        <Check className="w-4 h-4 text-emerald-300" />
+                        <span>¡Prompt Maestro copiado!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-4 h-4" />
+                        <span>Copiar Prompt Maestro</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
 
               <div className="bg-slate-950/80 dark:bg-slate-900/90 border border-slate-800 rounded-lg p-4 mb-5">
@@ -425,6 +535,14 @@ export const Module4PromptSimulator: React.FC<Module4PromptSimulatorProps> = ({
                 </div>
               </div>
             </div>
+
+            {/* Block 3: Recent Prompts History (local storage) */}
+            <RecentPromptHistory
+              history={recentPrompts}
+              onRestorePrompt={handleRestorePrompt}
+              onClearHistory={handleClearHistory}
+              isStorageSupported={isStorageSupported}
+            />
           </div>
         </div>
       </div>

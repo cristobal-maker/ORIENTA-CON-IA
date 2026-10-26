@@ -34,3 +34,122 @@
 .text-balance {
   text-wrap: balance;
 }
+
+/* Print Media Query Optimization for Educational Guidance Modules */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 14mm 12mm 14mm 12mm;
+  }
+
+  /* Reset backgrounds, shadows, and text colors to black-on-white for ink economy */
+  *,
+  *::before,
+  *::after {
+    background: transparent !important;
+    color: #0f172a !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  html,
+  body,
+  #root,
+  main {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    font-size: 10pt !important;
+    line-height: 1.45 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Remove distracting on-screen navigation, headers, footers, toolbars, and popups */
+  header,
+  footer,
+  #tour-comfort-toolbar,
+  .react-joyride__overlay,
+  .react-joyride__floater,
+  .react-joyride__portal,
+  [data-joyride],
+  button:not(.print-preserve) {
+    display: none !important;
+  }
+
+  /* Section padding and margins for clean paper documents */
+  section {
+    padding-top: 1rem !important;
+    padding-bottom: 1.5rem !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    break-after: auto !important;
+  }
+
+  /* Page breaks optimization */
+  h1, h2, h3, h4, h5 {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  article,
+  .print-break-inside-avoid,
+  .rounded-xl,
+  .border {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Code and pre elements in print */
+  pre,
+  code {
+    background-color: #f8fafc !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #1e293b !important;
+    white-space: pre-wrap !important;
+    word-break: break-word !important;
+    font-size: 8pt !important;
+    padding: 0.5rem !important;
+    border-radius: 0.25rem !important;
+  }
+
+  /* Target-specific printing filters when user chose to print a single module */
+  body.print-only-guia #inicio,
+  body.print-only-guia #fundamentos,
+  body.print-only-guia #funciones-orientador,
+  body.print-only-guia #tareas-administrativas,
+  body.print-only-guia #glosario-terminos,
+  body.print-only-guia #simulador-prompts {
+    display: none !important;
+  }
+  body.print-only-guia #guia-paso-a-paso {
+    display: block !important;
+  }
+
+  body.print-only-casos #inicio,
+  body.print-only-casos #fundamentos,
+  body.print-only-casos #guia-paso-a-paso,
+  body.print-only-casos #tareas-administrativas,
+  body.print-only-casos #glosario-terminos,
+  body.print-only-casos #simulador-prompts {
+    display: none !important;
+  }
+  body.print-only-casos #funciones-orientador {
+    display: block !important;
+  }
+
+  body.print-only-glosario #inicio,
+  body.print-only-glosario #fundamentos,
+  body.print-only-glosario #guia-paso-a-paso,
+  body.print-only-glosario #funciones-orientador,
+  body.print-only-glosario #tareas-administrativas,
+  body.print-only-glosario #simulador-prompts {
+    display: none !important;
+  }
+  body.print-only-glosario #glosario-terminos {
+    display: block !important;
+  }
+
+  /* Clean up links so full URLs are not printed after text */
+  a[href]::after {
+    content: "" !important;
+  }
+}
